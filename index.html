@@ -1,0 +1,3422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hogwarts Valentine Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IM Fell English', serif;
+            background: 
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.3)),
+                url('images/greathall.webp');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* Opening sequence */
+        #opening-sequence {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 1.5s ease;
+        }
+
+        #opening-sequence.hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        .opening-text {
+            position: absolute;
+            color: #d4af37;
+            font-size: 2rem;
+            text-align: center;
+            max-width: 80%;
+            opacity: 0;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+            letter-spacing: 2px;
+            line-height: 1.6;
+        }
+
+        .opening-text .word {
+            display: inline-block;
+            opacity: 0;
+            margin-right: 0.3em;
+        }
+
+        @keyframes wordAppear {
+            to { opacity: 1; }
+        }
+
+        /* Dark interface before letter */
+        #dark-interface {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #0a0a0a;
+            z-index: 900;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+        }
+
+        #dark-interface.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Letter container */
+        /* ===== OVERLAY SCREENS (house selection + letter) ===== */
+        .overlay-screen {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 970;
+            background: rgba(0,0,0,0.96);
+            padding: 1.5rem 1rem;
+            gap: 0;
+        }
+        .overlay-screen.active { display: flex; }
+
+        /* ===== HOUSE SELECTION ===== */
+        .house-selection-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            color: #d4af37;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(212,175,55,0.5);
+        }
+        /* Single horizontal row */
+        .house-options {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-end;
+            gap: clamp(0.5rem, 2vw, 2rem);
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        .house-banner {
+            cursor: pointer;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            flex-shrink: 0;
+        }
+        .house-banner:hover {
+            transform: translateY(-10px) scale(1.08);
+            filter: brightness(1.3) drop-shadow(0 0 12px rgba(212,175,55,0.6));
+        }
+        .house-banner img {
+            width: clamp(70px, 13vw, 140px);
+            height: auto;
+            display: block;
+        }
+        .house-feedback {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            text-align: center;
+            min-height: 2.5rem;
+            line-height: 1.6;
+            max-width: 600px;
+            color: #d4af37;
+            padding: 0 1rem;
+        }
+        .house-feedback.wrong { color: #ff6b6b; font-style: italic; }
+        .house-feedback.correct { color: #51cf66; }
+
+        /* ===== LETTER CONTAINER ===== */
+        #letter-container {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            padding: 1rem;
+            z-index: 950;
+            background: rgba(0,0,0,0.88);
+        }
+        #letter-container.active { display: flex; }
+
+        .letter-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .letter-wrapper.flying {
+            animation: letterFly 2s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        }
+        @keyframes letterFly {
+            0%   { transform: translate(-150vw,-80vh) rotate(-30deg) scale(0.3); opacity:0; }
+            60%  { opacity: 1; }
+            100% { transform: translate(0,0) rotate(-3deg) scale(1); opacity:1; }
+        }
+        .letter-wrapper.unfolding {
+            animation: letterUnfold 1.2s ease-out forwards;
+        }
+        @keyframes letterUnfold {
+            from { transform: rotate(-3deg) scale(1); }
+            to   { transform: rotate(0deg) scale(1); }
+        }
+
+        /* Parchment: constrained so everything fits on screen */
+        .letter-image {
+            display: block;
+            width: auto;
+            max-width: min(360px, 55vw);
+            max-height: 50vh;
+            object-fit: contain;
+            filter: drop-shadow(0 15px 40px rgba(0,0,0,0.9));
+        }
+
+        /* Seal sits on top of parchment */
+        .hogwarts-seal {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            width: min(140px, 28vw);
+            height: auto;
+            z-index: 10;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+        .hogwarts-seal.fade-out { opacity: 0; }
+
+        /* Warning text */
+        .warning-text {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(0.95rem, 2.2vw, 1.5rem);
+            color: #d4af37;
+            text-align: center;
+            max-width: 80vw;
+            text-shadow: 0 0 15px rgba(212,175,55,0.5);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.8s ease;
+            pointer-events: none;
+        }
+        .warning-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* CTA Button */
+        #cta-button {
+            padding: 0.9rem 2rem;
+            background: rgba(139,90,43,0.5);
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: clamp(0.75rem, 1.5vw, 1rem);
+            font-weight: 600;
+            border: 2px solid #d4af37;
+            border-radius: 4px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.3s ease, background 0.3s ease;
+        }
+        #cta-button.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #cta-button:hover {
+            background: rgba(139,90,43,0.75);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(212,175,55,0.4);
+        }
+
+        /* Section 2 - Great Hall */
+        #great-hall {
+            position: relative;
+            width: 100%;
+            min-height: 250vh;
+            background: transparent;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s ease;
+            padding: 4rem 0;
+        }
+
+        #great-hall.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #great-hall::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(90deg, rgba(92, 64, 51, 0.03) 0px, transparent 2px, transparent 4px, rgba(92, 64, 51, 0.03) 6px),
+                repeating-linear-gradient(0deg, rgba(62, 39, 35, 0.03) 0px, transparent 2px, transparent 4px, rgba(62, 39, 35, 0.03) 6px);
+            pointer-events: none;
+        }
+
+        /* Floating candles */
+        .candle-light {
+            position: absolute;
+            top: 10%;
+            width: 3px;
+            height: 60px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 200, 100, 0.8), rgba(255, 150, 50, 0.6));
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: candleFloat 4s ease-in-out infinite;
+            transition: animation-duration 1s ease;
+        }
+
+        .candle-light.slow {
+            animation-duration: 8s;
+        }
+
+        .candle-light::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, rgba(255, 200, 100, 0.8), rgba(255, 150, 50, 0.3), transparent);
+            border-radius: 50%;
+            filter: blur(8px);
+        }
+
+        @keyframes candleFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Great Hall content */
+        .hall-content {
+            position: relative;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            z-index: 10;
+        }
+
+        /* Layout: Text in shadow box (left), Images (right) */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 3rem;
+            align-items: start;
+            margin-top: 8rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            justify-items: center;
+        }
+
+        /* Shadow box for text */
+        .text-shadow-box {
+            background: rgba(20, 15, 10, 0.85);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            padding: 2.5rem;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.7),
+                inset 0 0 30px rgba(212, 175, 55, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .hall-heading {
+            font-family: 'Cinzel', serif;
+            font-size: 3rem;
+            color: #d4af37;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+
+        .hall-heading.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hall-subtext {
+            font-size: 1.3rem;
+            color: #c9b896;
+            font-style: italic;
+            line-height: 1.8;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease 0.3s;
+        }
+
+        .hall-subtext.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Memory slideshow */
+        .memory-slideshow {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 4/3;
+            background: rgba(20, 15, 10, 0.5);
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 
+                0 15px 50px rgba(0, 0, 0, 0.7),
+                inset 0 0 30px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1.5s ease 0.6s;
+        }
+
+        .memory-slideshow.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .memory-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .memory-slide.active {
+            opacity: 1;
+        }
+
+        .memory-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .memory-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(212, 175, 55, 0.5);
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Interactive moments with shadow boxes */
+        .interactive-moments {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 6rem;
+            padding: 2rem;
+        }
+
+        .moment-item {
+            background: rgba(20, 15, 10, 0.85);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            padding: 2rem;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.6s ease;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.6),
+                inset 0 0 20px rgba(212, 175, 55, 0.05);
+            backdrop-filter: blur(8px);
+            min-height: 120px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .moment-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all !important;
+        }
+
+        .moment-item:hover {
+            border-color: rgba(212, 175, 55, 0.6);
+            box-shadow: 
+                0 15px 50px rgba(0, 0, 0, 0.8),
+                inset 0 0 30px rgba(212, 175, 55, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .moment-item:active {
+            transform: translateY(-2px);
+        }
+
+        .moment-label {
+            font-family: 'Cinzel', serif;
+            color: #d4af37;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+            cursor: pointer;
+        }
+
+        .moment-text {
+            color: #c9b896;
+            font-size: 1rem;
+            line-height: 1.7;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            margin-top: 0;
+        }
+
+        .moment-item.active .moment-text {
+            opacity: 1;
+            max-height: 200px;
+            margin-top: 0.5rem;
+        }
+
+        /* Transition message to Section 3 */
+        .transition-message {
+            text-align: center;
+            margin: 8rem auto 4rem;
+            padding: 3rem 2rem;
+            max-width: 700px;
+            background: rgba(20, 15, 10, 0.85);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.7),
+                inset 0 0 30px rgba(212, 175, 55, 0.05);
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1.5s ease;
+        }
+
+        .transition-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .transition-message p {
+            font-size: 1.8rem;
+            color: #d4af37;
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        /* Section 3 - Games */
+        #games-section {
+            position: relative;
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.5s ease;
+            z-index: 5;
+        }
+
+        #games-section.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .game-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Game shadow box */
+        .game-box {
+            background: rgba(20, 15, 10, 0.9);
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 12px;
+            padding: 3rem 2.5rem;
+            box-shadow: 
+                0 15px 50px rgba(0, 0, 0, 0.8),
+                inset 0 0 40px rgba(212, 175, 55, 0.08);
+            backdrop-filter: blur(15px);
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.95) translateY(30px);
+            transition: all 0.8s ease;
+            position: relative;
+            z-index: 20;
+            pointer-events: all;
+        }
+
+        .game-box.visible {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: all;
+        }
+
+        .game-box.exiting {
+            opacity: 0;
+            transform: scale(0.95) translateY(-30px);
+            pointer-events: none;
+        }
+
+        .game-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: #d4af37;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            position: relative;
+            z-index: 25;
+        }
+
+        .game-question {
+            font-size: 1.5rem;
+            color: #c9b896;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+            position: relative;
+            z-index: 25;
+        }
+
+        .game-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 30;
+        }
+
+        .game-button {
+            padding: 1.2rem 2rem;
+            background: rgba(139, 90, 43, 0.5);
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            border: 2px solid rgba(212, 175, 55, 0.6);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            position: relative;
+            z-index: 35;
+            pointer-events: all !important;
+            user-select: none;
+        }
+
+        .game-button:hover {
+            background: rgba(139, 90, 43, 0.7);
+            border-color: rgba(212, 175, 55, 0.9);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .game-button:active {
+            transform: translateY(0);
+            background: rgba(139, 90, 43, 0.8);
+        }
+
+        .game-result {
+            font-size: 1.2rem;
+            color: #c9b896;
+            font-style: italic;
+            line-height: 1.9;
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease;
+            white-space: pre-line;
+            text-align: left;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .game-result.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Owl Post section */
+        .owls-container {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin: 2rem 0;
+            padding: 0 3rem; 
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .owl-item {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .owl-item:hover {
+            transform: translateY(-10px);
+        }
+
+        .owl-item img {
+            width: 150px;
+            height: auto;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.7));
+            transition: filter 0.3s ease;
+        }
+
+        .owl-item:hover img {
+            filter: drop-shadow(0 15px 40px rgba(212, 175, 55, 0.5));
+        }
+
+        .owl-label {
+            text-align: center;
+            margin-top: 1rem;
+            font-family: 'Cinzel', serif;
+            color: #d4af37;
+            font-size: 1.1rem;
+        }
+
+        .owl-item.flying {
+            animation: owlFly 1.5s ease forwards;
+        }
+
+        @keyframes owlFly {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-50vh) scale(0.8);
+            }
+            100% {
+                transform: translateY(-100vh) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        /* Hearts animation */
+        .heart {
+            position: fixed;
+            font-size: 2rem;
+            color: rgba(212, 175, 55, 0.8);
+            animation: heartFloat 3s ease forwards;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @keyframes heartFloat {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        /* Final Valentine button */
+        .valentine-button {
+            display: inline-block;
+            padding: 1.5rem 3.5rem;
+            background: rgba(139, 90, 43, 0.4);
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            border: 3px solid #d4af37;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5);
+            transition: all 0.4s ease;
+            margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .valentine-button.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .valentine-button:hover {
+            background: rgba(139, 90, 43, 0.6);
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.7);
+            transform: translateY(-5px);
+        }
+
+        /* Section 4 - Final Valentine Proposal */
+        #final-section {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2.5s ease;
+            background: 
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.4)),
+                url('images/nightsky.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        #final-section.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #final-section.warmed {
+            background: 
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.2)),
+                url('images/nightsky.jpg');
+        }
+
+        .final-container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .final-box {
+            background: rgba(20, 15, 10, 0.9);
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 12px;
+            padding: 4rem 3rem;
+            box-shadow: 
+                0 15px 50px rgba(0, 0, 0, 0.8),
+                inset 0 0 40px rgba(212, 175, 55, 0.08);
+            backdrop-filter: blur(15px);
+            text-align: center;
+        }
+
+        .final-line {
+            font-size: 2rem;
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            line-height: 1.8;
+            margin-bottom: 2.5rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 2s ease;
+        }
+
+        .final-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .final-question {
+            font-size: 1.8rem;
+            color: #c9b896;
+            line-height: 1.8;
+            margin: 3rem 0 2.5rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 2s ease;
+        }
+
+        .final-question.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .final-buttons {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+
+        .final-buttons.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .final-button {
+            padding: 1.2rem 3rem;
+            background: rgba(139, 90, 43, 0.3);
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .final-button:hover {
+            background: rgba(139, 90, 43, 0.5);
+            border-color: rgba(212, 175, 55, 0.8);
+            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .final-answer {
+            font-size: 1.5rem;
+            color: #c9b896;
+            font-style: italic;
+            line-height: 1.8;
+            margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 2s ease;
+        }
+
+        .final-answer.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Keepsake section */
+        .keepsake-section {
+            margin-top: 4rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 2s ease;
+        }
+
+        .keepsake-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .keepsake-message {
+            font-size: 1.4rem;
+            color: #c9b896;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .keepsake-actions {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .keepsake-button {
+            padding: 1rem 2.5rem;
+            background: rgba(139, 90, 43, 0.25);
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .keepsake-button:hover {
+            background: rgba(139, 90, 43, 0.4);
+            border-color: rgba(212, 175, 55, 0.7);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .true-ending {
+            font-size: 1.4rem;
+            color: #d4af37;
+            font-style: italic;
+            line-height: 1.8;
+            margin-top: 3rem;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 2s ease;
+        }
+
+        .true-ending.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+
+        /* Section C - Silence Section */
+        #silence-section {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s ease;
+            padding: 4rem 2rem;
+        }
+
+        #silence-section.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #silence-section.locked {
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .silence-content {
+            text-align: center;
+            max-width: 800px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .silence-hearts {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .silence-heart {
+            position: absolute;
+            font-size: 1.5rem;
+            color: rgba(212, 175, 55, 0.3);
+            animation: silenceHeartFloat 8s ease-in-out infinite;
+        }
+
+        @keyframes silenceHeartFloat {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-30px) translateX(10px); opacity: 0.6; }
+        }
+
+        .silence-candle {
+            position: absolute;
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 200, 100, 0.4));
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: silenceCandleFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes silenceCandleFloat {
+            0%, 100% { transform: translateY(0); opacity: 0.4; }
+            50% { transform: translateY(-20px); opacity: 0.7; }
+        }
+
+        .silence-text {
+            font-size: 2.2rem;
+            color: #d4af37;
+            font-style: italic;
+            line-height: 2;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+
+        .silence-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .silence-continue {
+            margin-top: 4rem;
+            padding: 1rem 2.5rem;
+            background: transparent;
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.4s ease;
+            pointer-events: none;
+        }
+
+        .silence-continue.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .silence-continue:hover {
+            border-color: rgba(212, 175, 55, 0.9);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Section D - Forever Valentine */
+        #forever-valentine {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: 
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.2)),
+                url('images/nightsky.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s ease;
+            padding: 4rem 2rem;
+        }
+
+        #forever-valentine.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .forever-content {
+            background: rgba(20, 15, 10, 0.9);
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 12px;
+            padding: 4rem 3rem;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.8),
+                inset 0 0 40px rgba(212, 175, 55, 0.08);
+            backdrop-filter: blur(15px);
+            text-align: center;
+        }
+
+        .forever-intro {
+            font-size: 1.6rem;
+            color: #c9b896;
+            font-style: italic;
+            line-height: 2;
+            margin-bottom: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+
+        .forever-intro.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forever-question {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: #d4af37;
+            margin: 3rem 0;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease 0.5s;
+        }
+
+        .forever-question.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forever-options {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin: 3rem 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease 1s;
+        }
+
+        .forever-options.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forever-button {
+            padding: 1.2rem 3rem;
+            background: rgba(139, 90, 43, 0.3);
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .forever-button:hover {
+            background: rgba(139, 90, 43, 0.5);
+            border-color: rgba(212, 175, 55, 0.9);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+        }
+
+        .forever-response {
+            font-size: 1.3rem;
+            color: #c9b896;
+            font-style: italic;
+            margin: 2rem 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s ease;
+        }
+
+        .forever-response.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forever-transition {
+            font-size: 1.5rem;
+            color: #c9b896;
+            font-style: italic;
+            line-height: 2;
+            margin: 3rem 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+
+        .forever-transition.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forever-actions {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+
+        .forever-actions.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .forever-doc-button {
+            padding: 1rem 2rem;
+            background: rgba(139, 90, 43, 0.3);
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .forever-doc-button:hover {
+            background: rgba(139, 90, 43, 0.5);
+            border-color: rgba(212, 175, 55, 0.8);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Final Ending Section */
+        #final-ending {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: 
+                radial-gradient(circle at center, rgba(20, 15, 10, 0.7), rgba(0, 0, 0, 0.95)),
+                url('images/nightsky.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s ease;
+            padding: 4rem 2rem;
+            overflow: hidden;
+        }
+
+        #final-ending.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .ending-content {
+            text-align: center;
+            max-width: 900px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .ending-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15), transparent 70%);
+            border-radius: 50%;
+            animation: endingPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes endingPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.5; }
+        }
+
+        .ending-line {
+            font-size: 2rem;
+            color: #d4af37;
+            font-style: italic;
+            line-height: 2;
+            margin: 2rem 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1.5s ease;
+        }
+
+        .ending-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .ending-signature {
+            margin-top: 4rem;
+            margin-bottom: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.5s ease;
+        }
+
+        .ending-signature.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .signature-line {
+            font-size: 1.3rem;
+            color: #c9b896;
+            font-style: italic;
+            margin-bottom: 0.5rem;
+        }
+
+        .signature-name {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: #d4af37;
+            font-weight: 600;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .ending-hearts {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .ending-heart {
+            position: absolute;
+            font-size: 1.5rem;
+            color: rgba(212, 175, 55, 0.4);
+            animation: endingHeartRise 8s ease-in forwards;
+        }
+
+        @keyframes endingHeartRise {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0;
+            }
+            20% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100vh) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        .ending-final {
+            font-size: 4rem;
+            color: #d4af37;
+            margin-top: 4rem;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 2s ease;
+        }
+
+        .ending-final.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Hide old final section */
+        #final-section {
+            display: none;
+        }
+
+        /* Download message */
+        .download-message {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 1.2rem;
+            color: #c9b896;
+            font-style: italic;
+        }
+
+        /* Scroll indicator for games */
+        .scroll-indicator {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeInBounce 2s ease forwards;
+            animation-delay: 2s;
+        }
+
+        @keyframes fadeInBounce {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(5px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .scroll-arrow {
+            font-size: 3rem;
+            color: #d4af37;
+            animation: bounce 2s infinite;
+            display: block;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-15px);
+            }
+            60% {
+                transform: translateY(-7px);
+            }
+        }
+
+        .scroll-text {
+            font-family: 'Cinzel', serif;
+            color: #d4af37;
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Additional playful games styling */
+        .playful-games-section {
+            margin-top: 6rem;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1.5s ease;
+        }
+
+        .playful-games-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .playful-game {
+            margin-bottom: 4rem;
+        }
+
+        /* Annotate Your Answer - disabled button */
+        .disabled-option {
+            opacity: 0.5;
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        .disabled-option::after {
+            content: 'Magically Sealed';
+            position: absolute;
+            top: -2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(139, 90, 43, 0.9);
+            color: #d4af37;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .disabled-option:hover::after {
+            opacity: 1;
+        }
+
+        /* Illusion of Choice - dissolving effect */
+        .dissolving {
+            animation: dissolve 1s ease forwards;
+        }
+
+        @keyframes dissolve {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.95);
+                filter: blur(3px);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.8);
+                filter: blur(10px);
+            }
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-style: italic;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.5s ease;
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Sorting Hat */
+        .sorting-hat-container {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .sorting-hat-image {
+            width: 200px;
+            height: auto;
+            filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.6))
+                    drop-shadow(0 0 60px rgba(255, 200, 100, 0.4));
+            animation: hatFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes hatFloat {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-15px) rotate(2deg); }
+        }
+
+        .sorting-result {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(139, 90, 43, 0.3);
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 8px;
+            font-size: 1.3rem;
+            color: #d4af37;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.6s ease;
+        }
+
+        .sorting-result.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Yes Meter Slider */
+        .slider-container {
+            margin: 2rem 0;
+            padding: 2rem;
+        }
+
+        .slider-track {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(to right, 
+                rgba(100, 100, 100, 0.3) 0%,
+                rgba(212, 175, 55, 0.3) 50%,
+                rgba(255, 215, 0, 0.5) 100%);
+            border-radius: 30px;
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            margin-bottom: 1rem;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 1rem;
+            margin-top: 0.5rem;
+            color: #c9b896;
+            font-size: 1rem;
+        }
+
+        .slider-input {
+            width: 100%;
+            height: 60px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .slider-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #d4af37, #b8941f);
+            border-radius: 50%;
+            border: 3px solid rgba(255, 215, 0, 0.8);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+            pointer-events: none;
+            transition: left 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .slider-tooltip {
+            position: absolute;
+            top: -3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(139, 90, 43, 0.9);
+            color: #d4af37;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .slider-container:hover .slider-tooltip {
+            opacity: 1;
+        }
+
+        /* Success glow effect */
+        .success-glow {
+            animation: successGlow 0.8s ease;
+        }
+
+        @keyframes successGlow {
+            0%, 100% {
+                box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+            }
+            50% {
+                box-shadow: 0 5px 40px rgba(212, 175, 55, 0.9);
+            }
+        }
+
+        /* Letter modal */
+        .letter-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .letter-modal.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .letter-modal-content {
+            position: relative;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 3rem 0;
+        }
+
+        .letter-modal img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+        }
+
+        .close-modal {
+            position: sticky;
+            top: 1rem;
+            left: 100%;
+            background: rgba(139, 90, 43, 0.9);
+            color: #d4af37;
+            border: 2px solid rgba(212, 175, 55, 0.7);
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            z-index: 10;
+        }
+
+        .close-modal:hover {
+            background: rgba(139, 90, 43, 1);
+            border-color: rgba(212, 175, 55, 1);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 2px;
+            height: 2px;
+            background: rgba(212, 175, 55, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+            animation: float linear infinite;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 968px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .text-shadow-box {
+                padding: 2rem;
+            }
+
+            .hall-heading {
+                font-size: 2.2rem;
+            }
+
+            .hall-subtext {
+                font-size: 1.1rem;
+            }
+
+            .owls-container {
+                gap: 2rem;
+            }
+
+            .owl-item img {
+                width: 150px;
+            }
+        }
+
+        /* Additional responsive styles for all sections */
+        @media (max-width: 768px) {
+            /* House selection */
+            .house-selection-title {
+                font-size: 1.5rem;
+                margin-bottom: 2rem;
+            }
+            
+            .house-options {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                max-width: 300px;
+            }
+            
+            .house-banner img {
+                max-width: 250px;
+            }
+            
+            .house-feedback {
+                font-size: 1.2rem;
+                padding: 0 1rem;
+            }
+            
+            /* Letter */
+            .letter-image {
+                max-width: 90vw;
+            }
+            
+            .hogwarts-seal {
+                width: 150px;
+            }
+            
+            .warning-text {
+                font-size: 1.3rem;
+                padding: 0 1rem;
+            }
+            
+            #cta-button {
+                font-size: 0.9rem;
+                padding: 1rem 2rem;
+            }
+            
+            /* Content grid */
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                padding: 0 1rem;
+            }
+            
+            /* Moments */
+            .interactive-moments {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                padding: 1rem;
+            }
+            
+            .moment-item {
+                padding: 1.5rem;
+            }
+            
+            .moment-label {
+                font-size: 1.1rem;
+            }
+            
+            /* Games */
+            .game-title {
+                font-size: 1.5rem;
+            }
+            
+            .game-question {
+                font-size: 1.2rem;
+            }
+            
+            .game-button {
+                font-size: 1rem;
+                padding: 1rem 1.5rem;
+            }
+            
+            .game-box {
+                padding: 2rem 1.5rem;
+            }
+            
+            /* Silence section */
+            .silence-text {
+                font-size: 1.5rem;
+                padding: 0 1rem;
+            }
+            
+            .silence-continue {
+                font-size: 0.9rem;
+                padding: 0.8rem 2rem;
+            }
+            
+            /* Forever Valentine */
+            .forever-content {
+                padding: 2rem 1.5rem;
+            }
+            
+            .forever-intro {
+                font-size: 1.2rem;
+            }
+            
+            .forever-question {
+                font-size: 1.8rem;
+            }
+            
+            .forever-options {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .forever-button {
+                width: 100%;
+                font-size: 1.1rem;
+            }
+            
+            .forever-response {
+                font-size: 1.1rem;
+            }
+            
+            .forever-transition {
+                font-size: 1.2rem;
+            }
+            
+            .forever-actions {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .forever-doc-button {
+                width: 100%;
+            }
+            
+            /* Final ending */
+            .ending-line {
+                font-size: 1.5rem;
+                padding: 0 1rem;
+            }
+            
+            .signature-line {
+                font-size: 1.1rem;
+            }
+            
+            .signature-name {
+                font-size: 1.5rem;
+            }
+            
+            .ending-final {
+                font-size: 3rem;
+            }
+            
+            /* Letter modal */
+            .letter-modal {
+                padding: 1rem;
+            }
+            
+            .letter-modal-content {
+                padding: 2rem 0;
+            }
+            
+            .close-modal {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Small mobile */
+        @media (max-width: 480px) {
+            .opening-text {
+                font-size: 1.1rem;
+            }
+            
+            .house-selection-title {
+                font-size: 1.3rem;
+            }
+            
+            .house-options {
+                max-width: 200px;
+            }
+            
+            .house-banner img {
+                max-width: 180px;
+            }
+            
+            .warning-text {
+                font-size: 1.1rem;
+            }
+            
+            #cta-button {
+                font-size: 0.8rem;
+                padding: 0.9rem 1.5rem;
+            }
+            
+            .hall-heading {
+                font-size: 1.5rem;
+            }
+            
+            .game-title {
+                font-size: 1.3rem;
+            }
+            
+            .game-question {
+                font-size: 1rem;
+            }
+            
+            .silence-text {
+                font-size: 1.2rem;
+            }
+            
+            .forever-question {
+                font-size: 1.5rem;
+            }
+            
+            .ending-line {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .letter-image {
+                max-height: 60vh;
+                width: auto;
+            }
+            
+            #letter-container {
+                gap: 1rem;
+            }
+            
+            .house-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Opening Sequence -->
+    <div id="opening-sequence">
+        <div class="opening-text" id="text1"></div>
+        <div class="opening-text" id="text2"></div>
+    </div>
+
+    <!-- Dark Interface -->
+    <div id="dark-interface"></div>
+
+    <!-- House Selection for Him -->
+    <div id="his-house-selection" class="overlay-screen">
+        <h2 class="house-selection-title">Choose Your House</h2>
+        <div class="house-options">
+            <div class="house-banner" onclick="selectHisHouse('gryffindor')">
+                <img src="images/grifindorr.png" alt="Gryffindor">
+            </div>
+            <div class="house-banner" onclick="selectHisHouse('hufflepuff')">
+                <img src="images/hufflepuff.png" alt="Hufflepuff">
+            </div>
+            <div class="house-banner" onclick="selectHisHouse('ravenclaw')">
+                <img src="images/ravenclaw.png" alt="Ravenclaw">
+            </div>
+            <div class="house-banner" onclick="selectHisHouse('slytherin')">
+                <img src="images/slytherin.png" alt="Slytherin">
+            </div>
+        </div>
+        <p class="house-feedback" id="hisFeedback"></p>
+    </div>
+
+    <!-- House Selection for Her -->
+    <div id="her-house-selection" class="overlay-screen">
+        <h2 class="house-selection-title">Now choose her house</h2>
+        <div class="house-options">
+            <div class="house-banner" onclick="selectHerHouse('gryffindor')">
+                <img src="images/grifindorr.png" alt="Gryffindor">
+            </div>
+            <div class="house-banner" onclick="selectHerHouse('hufflepuff')">
+                <img src="images/hufflepuff.png" alt="Hufflepuff">
+            </div>
+            <div class="house-banner" onclick="selectHerHouse('ravenclaw')">
+                <img src="images/ravenclaw.png" alt="Ravenclaw">
+            </div>
+            <div class="house-banner" onclick="selectHerHouse('slytherin')">
+                <img src="images/slytherin.png" alt="Slytherin">
+            </div>
+        </div>
+        <p class="house-feedback" id="herFeedback"></p>
+    </div>
+
+    <!-- Letter Container -->
+    <div id="letter-container">
+        <div class="letter-wrapper" id="letterWrapper">
+            <img src="images/hogwarts-parchment.png" alt="Hogwarts Letter" class="letter-image">
+            <img src="images/hogwarts-seal.png" alt="Hogwarts Seal" class="hogwarts-seal" id="hogwartsSeal">
+        </div>
+        <div class="warning-text" id="warningText">
+            PEHLE AAGE KA RASTA TO DEKH LO SIR JI
+        </div>
+        <button id="cta-button">LET'S EXPLORE THE WORLDLY MAGIC WAITING FOR YOU</button>
+    </div>
+
+    <!-- Section 2 - Great Hall -->
+    <section id="great-hall">
+        <!-- Floating candle lights -->
+        <div class="candle-light" style="left: 15%; animation-delay: 0s;"></div>
+        <div class="candle-light" style="left: 30%; animation-delay: 1.5s;"></div>
+        <div class="candle-light" style="left: 50%; animation-delay: 0.8s;"></div>
+        <div class="candle-light" style="left: 70%; animation-delay: 2s;"></div>
+        <div class="candle-light" style="left: 85%; animation-delay: 1.2s;"></div>
+
+        <div class="hall-content">
+            <div class="content-grid">
+                <!-- Text in shadow box (left) -->
+                <div class="text-shadow-box">
+                    <h1 class="hall-heading" id="hallHeading">A year, lived.</h1>
+                    <p class="hall-subtext" id="hallSubtext">Not measured in days, but in moments that stayed.</p>
+                </div>
+
+                <!-- Memory slideshow (right) -->
+                    <div class="memory-slideshow" id="memorySlideshow">
+
+                        <div class="memory-slide active">
+                            <img src="images/memory1.jpg" alt="Memory 1">
+                        </div>
+
+                        <div class="memory-slide">
+                            <img src="images/memory2.jpg" alt="Memory 2">
+                        </div>
+
+                        <div class="memory-slide">
+                            <img src="images/memory3.jpg" alt="Memory 3">
+                        </div>
+
+                        <div class="memory-slide">
+                            <img src="images/memory4.jpg" alt="Memory 4">
+                        </div>
+
+                        <div class="memory-slide">
+                            <img src="images/memory5.jpg" alt="Memory 5">
+                        </div>
+
+                        <div class="memory-slide">
+                            <img src="images/memory6.jpg" alt="Memory 6">
+                        </div>
+
+                        <div class="memory-slide">
+                            <img src="images/memory7.jpg" alt="Memory 7">
+                        </div>
+
+                        <div class="memory-slide">
+                            <img src="images/memory8.jpg" alt="Memory 8">
+                        </div>
+                        
+                        <div class="memory-slide">
+                            <img src="images/memory9.jpg" alt="Memory 9">
+                        </div>
+
+                    </div>
+            </div>
+
+            <div class="interactive-moments">
+                <div class="moment-item" data-index="0">
+                    <div class="moment-label">Attraction</div>
+                    <div class="moment-text">The spark that started it all. A curiosity that grew into something undeniable.</div>
+                </div>
+
+                <div class="moment-item" data-index="1">
+                    <div class="moment-label">Infatuation</div>
+                    <div class="moment-text">When everything felt new and exciting. Every moment together felt like magic.</div>
+                </div>
+
+                <div class="moment-item" data-index="2">
+                    <div class="moment-label">Reality Check</div>
+                    <div class="moment-text">Learning each other's rhythms. Not always easy, but always worth it.</div>
+                </div>
+
+                <div class="moment-item" data-index="3">
+                    <div class="moment-label">Stability</div>
+                    <div class="moment-text">Finding comfort in routine. Building something steady, something real.</div>
+                </div>
+
+                <div class="moment-item" data-index="4">
+                    <div class="moment-label">Commitment</div>
+                    <div class="moment-text">We didn't get everything right. We didn't walk away either.</div>
+                </div>
+
+                <div class="moment-item" data-index="5">
+                    <div class="moment-label">Intimacy</div>
+                    <div class="moment-text">Becoming something we weren't before. Together, but still ourselves.</div>
+                </div>
+
+                <div class="moment-item" data-index="6">
+                    <div class="moment-label">Unconditional Love</div>
+                    <div class="moment-text">Every day, in small ways. This is what real magic looks like.</div>
+                </div>
+            </div>
+
+            <!-- Transition to Section 3 -->
+            <div class="transition-message" id="transitionMsg">
+                <p>Not everything was serious. Some things were just fun.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3 - Games -->
+    <section id="games-section">
+        <div class="game-container">
+            <!-- Game 1: This or That -->
+            <div class="game-box" id="game1">
+                <h2 class="game-title">This or That (Us Edition)</h2>
+                <p class="game-question" id="game1-question">Coffee ☕ or Late-night walks 🌙</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="nextQuestion()">Coffee ☕</button>
+                    <button class="game-button" onclick="nextQuestion()">Late-night walks 🌙</button>
+                </div>
+            </div>
+
+            <!-- Game 2: Infinite Loop -->
+            <div class="game-box" id="game2" style="display: none;">
+                <h2 class="game-title">The Infinite Loop</h2>
+                <p class="game-question">Is Debasmita the most efficient choice you've ever made?</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="answerYes()">Yes</button>
+                    <button class="game-button" onclick="answerMaybe()">Maybe</button>
+                </div>
+                <p class="game-result" id="loop-message"></p>
+            </div>
+
+            <!-- Game 3: Amortentia -->
+            <div class="game-box" id="game3" style="display: none;">
+                <h2 class="game-title">Amortentia: The Scent Test</h2>
+                <p class="game-question">What does our love smell like today?</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="revealScent()">Old parchment</button>
+                    <button class="game-button" onclick="revealScent()">Rain on a tin roof</button>
+                    <button class="game-button" onclick="revealScent()">Your favourite cologne</button>
+                    <button class="game-button" onclick="revealScent()">Popcorn at the cinema</button>
+                </div>
+                <div class="game-result" id="scent-result"></div>
+            </div>
+
+            <!-- Game 4: Patronus Compliment -->
+            <div class="game-box" id="game4" style="display: none;">
+                <h2 class="game-title">The Patronus Compliment Generator</h2>
+                <p class="game-question">When darkness feels heavy, remember this:</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="castPatronus()">Cast the Patronus</button>
+                </div>
+                <p class="game-result" id="patronus-text"></p>
+            </div>
+
+            <!-- Game 5: Owl Post -->
+            <div class="game-box" id="game5" style="display: none;">
+                <h2 class="game-title">Owl Post</h2>
+                <p class="game-question">Choose your owl. Each carries a different kind of letter.</p>
+                <div class="owls-container">
+                    <div class="owl-item" onclick="selectOwl('funny', this)">
+                        <img src="images/hedwig_with_letter.png" alt="Funny Owl">
+                        <div class="owl-label">Funny</div>
+                    </div>
+                    <div class="owl-item" onclick="selectOwl('teasing', this)">
+                        <img src="images/brown_owl.png" alt="Teasing Owl">
+                        <div class="owl-label">Teasing</div>
+                    </div>
+                    <div class="owl-item" onclick="selectOwl('sentimental', this)">
+                        <img src="images/brown_and_white_owl.png" alt="Sentimental Owl">
+                        <div class="owl-label">Sentimental</div>
+                    </div>
+                </div>
+                <div class="game-result" id="owl-letter"></div>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button class="game-button" id="continueAfterOwl" style="display: none;" onclick="continueAfterOwlLetter()">
+                        Continue →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Playful Reassurance Games Section -->
+    <section id="playful-games" style="position: relative; padding: 4rem 2rem; opacity: 0; transition: opacity 1.5s ease; pointer-events: none; z-index: 6;">
+        <div class="game-container">
+            <!-- Game: Annotate Your Answer -->
+            <div class="game-box playful-game visible">
+                <h2 class="game-title">A Simple Question</h2>
+                <p class="game-question">Do you still choose me?</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="chooseYes(this)">Yes</button>
+                    <button class="game-button disabled-option" onclick="tryChooseNo(event)">No</button>
+                </div>
+            </div>
+
+            <!-- Game: Illusion of Choice -->
+            <div class="game-box playful-game" id="illusionGame" style="display: none;">
+                <h2 class="game-title">Who Do You Belong With?</h2>
+                <p class="game-question">Choose wisely...</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="chooseDebasmita()">Debasmita</button>
+                    <button class="game-button" id="someoneElse" onclick="chooseSomeoneElse(this)">Someone else</button>
+                </div>
+                <p class="error-message" id="multiverseError">This isn't a multiverse.</p>
+            </div>
+
+            <!-- Game: Would You Rather -->
+            <div class="game-box playful-game" id="wouldYouRather" style="display: none;">
+                <h2 class="game-title">Would You Rather...</h2>
+                <p class="game-question">Make your choice:</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="chooseValentine()">Spend Valentine's with me</button>
+                    <button class="game-button disabled-option" onclick="tryDetention(event)">Eternal detention</button>
+                </div>
+            </div>
+
+            <!-- Game: Sorting Hat -->
+            <div class="game-box playful-game" id="sortingHat" style="display: none;">
+                <h2 class="game-title">The Sorting Hat Speaks</h2>
+                <div class="sorting-hat-container">
+                    <img src="images/sorting-hat.png" alt="Sorting Hat" class="sorting-hat-image">
+                </div>
+                <p class="game-question">Should this relationship continue?</p>
+                <div class="game-options">
+                    <button class="game-button" onclick="sortObviouslyYes()">Obviously yes</button>
+                    <button class="game-button" id="thinkButton" onclick="tryThinkAboutIt(this)">Let's think about it</button>
+                </div>
+                <div class="sorting-result" id="sortingResult">
+                    <p style="font-family: 'Cinzel', serif; font-size: 1.5rem; margin-bottom: 0.5rem;">SORTED INTO:</p>
+                    <p style="font-size: 1.8rem; font-weight: 600;">Still Us</p>
+                </div>
+                <p class="error-message" id="hatScold" style="color: #d4af37; font-size: 1.2rem; margin-top: 1.5rem;">
+                    "Think about it? THINK ABOUT IT?! I've seen clearer decisions in a Niffler's treasure pile! This relationship belongs in the 'Obviously Forever' category. Now click the right button before I sort you into 'Hopelessly Indecisive'!" 
+                </p>
+            </div>
+
+            <!-- Game: Yes Meter -->
+            <div class="game-box playful-game" id="yesMeter" style="display: none;">
+                <h2 class="game-title">Commitment Level Check</h2>
+                <p class="game-question">How committed are you?</p>
+                <div class="slider-container">
+                    <div class="slider-track">
+                        <input type="range" min="0" max="100" value="100" class="slider-input" id="commitmentSlider">
+                        <div class="slider-thumb" id="sliderThumb" style="left: 100%;"></div>
+                        <div class="slider-tooltip">It always snaps back to "Always"</div>
+                    </div>
+                    <div class="slider-labels">
+                        <span>Meh</span>
+                        <span>Maybe</span>
+                        <span>Probably</span>
+                        <span style="color: #d4af37; font-weight: 600;">Always</span>
+                    </div>
+                </div>
+                <p class="game-result" id="meterResult" style="text-align: center;"></p>
+                
+                <!-- Scroll indicator -->
+                <div class="scroll-indicator" id="scrollIndicator" style="display: none;">
+                    <div class="scroll-arrow" onclick="scrollToFinalSection()">↓</div>
+                    <p class="scroll-text">Continue Your Journey</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section C - Silence Section -->
+    <section id="silence-section">
+        <div class="silence-hearts">
+            <!-- Hearts will be added via JS -->
+        </div>
+        <div class="silence-content">
+            <p class="silence-text" id="silenceText">
+                I don't always know the right words.<br>
+                But I know the right person.
+            </p>
+            <button class="silence-continue" id="silenceContinue" onclick="continueToForever()">
+                Continue
+            </button>
+        </div>
+    </section>
+
+    <!-- Section D - Forever Valentine -->
+    <section id="forever-valentine">
+        <div class="forever-content">
+            <p class="forever-intro" id="foreverIntro">
+                After all the games,<br>
+                after all the jokes,<br>
+                after all this time…<br><br>
+                Some things don't need spells.<br>
+                They just need staying.
+            </p>
+
+            <h2 class="forever-question" id="foreverQuestion">
+                Will you be my forever Valentine?
+            </h2>
+
+            <div class="forever-options" id="foreverOptions">
+                <button class="forever-button" onclick="answerForeverYes()">Yes</button>
+                <button class="forever-button" onclick="answerForeverAlways()">Always</button>
+            </div>
+
+            <p class="forever-response" id="foreverResponse"></p>
+
+            <p class="forever-transition" id="foreverTransition">
+                Some things are meant for you only.<br>
+                So keep this.<br><br>
+                Not as proof.<br>
+                But as something to return to.
+            </p>
+
+            <div class="forever-actions" id="foreverActions">
+                <button class="forever-doc-button" onclick="viewForeverDocument()">View Document</button>
+                <button class="forever-doc-button" onclick="downloadForeverDocument()">Download Document</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final Ending Section -->
+    <section id="final-ending">
+        <div class="ending-content">
+            <div class="ending-glow"></div>
+            
+            <p class="ending-line" id="endLine1">
+                You didn't need magic to find me.
+            </p>
+            
+            <p class="ending-line" id="endLine2">
+                You didn't need spells to stay.
+            </p>
+            
+            <p class="ending-line" id="endLine3">
+                You just needed to be you.
+            </p>
+            
+            <p class="ending-line" id="endLine4">
+                And somehow, that was always enough.
+            </p>
+            
+            <div class="ending-signature" id="endSignature">
+                <p class="signature-line">Always,</p>
+                <p class="signature-name">Debasmita</p>
+            </div>
+            
+            <div class="ending-hearts" id="endingHearts"></div>
+            
+            <p class="ending-final" id="endFinal">
+                ∞
+            </p>
+        </div>
+    </section>
+
+    <!-- Section 4 - Final Valentine Proposal (Old Final Section - Hidden) -->
+    <section id="final-section">
+        <div class="final-container">
+            <div class="final-box" id="finalBox">
+                <p class="final-line" id="line1">You are my beginning, my middle, and my end.</p>
+                <p class="final-line" id="line2">Not in a dramatic way. Just in the quiet way life unfolds.</p>
+                <p class="final-question" id="question">Will you be my Valentine —<br>not just today, but for the rest of our lives?</p>
+                <div class="final-buttons" id="finalButtons">
+                    <button class="final-button" onclick="answerValentine()">Yes</button>
+                    <button class="final-button" onclick="answerValentine()">Always</button>
+                </div>
+                <p class="final-answer" id="finalAnswer">Then let's keep choosing each other. Quietly. Honestly. Together.</p>
+                
+                <!-- Keepsake section -->
+                <div class="keepsake-section" id="keepsakeSection">
+                    <p class="keepsake-message" id="keepsakeMsg1">Some things are meant to be kept.</p>
+                    <p class="keepsake-message" id="keepsakeMsg2" style="margin-top: 1.5rem; opacity: 0;">This was yours from the beginning.</p>
+                    
+                    <div class="keepsake-actions" id="keepsakeActions" style="opacity: 0;">
+                        <button class="keepsake-button" onclick="viewLetterDocument()">
+                            View Document
+                        </button>
+                        <button class="keepsake-button" onclick="downloadLetter()">
+                            Keep a Copy
+                        </button>
+                    </div>
+                    
+                    <p class="download-message" id="downloadMsg" style="opacity: 0;">
+                        You own this.
+                    </p>
+                </div>
+
+                <p class="true-ending" id="trueEnding">You were never just invited. You were always meant to belong.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Letter viewing modal -->
+    <div class="letter-modal" id="letterModal">
+        <div class="letter-modal-content">
+            <button class="close-modal" onclick="closeLetter()">← Back</button>
+            <img src="images/hogwarts-parchment.png" alt="Hogwarts Acceptance Letter">
+        </div>
+    </div>
+
+    <script>
+        // Ensure page starts from the beginning on refresh
+        window.onbeforeunload = function () {
+            window.scrollTo(0, 0);
+        };
+
+        // Game state
+        let currentQuestionIndex = 0;
+        let maybeCount = 0;
+        let patronusIndex = 0;
+
+        const questions = [
+            { q: "Coffee ☕ or Late-night walks 🌙", opts: ["Coffee ☕", "Late-night walks 🌙"] },
+            { q: "Talking it out or Sitting quietly", opts: ["Talking it out", "Sitting quietly"] },
+            { q: "Staying in or Stepping out", opts: ["Staying in", "Stepping out"] },
+            { q: "Serious talks or Silly jokes", opts: ["Serious talks", "Silly jokes"] }
+        ];
+
+        const compliments = [
+            "You make difficult things feel manageable.",
+            "You stay, even when it's easier not to.",
+            "You're calmer than you think, stronger than you know.",
+            "You feel like home without trying.",
+            "Protection sometimes looks like kindness."
+        ];
+
+        const owlLetters = {
+            funny: `Dear Ukil Babu,
+
+I was asked to deliver something important. I got distracted halfway because honestly, aapke khubsurati ka raaz nhi pta na mujhe !!
+
+One year with you means I've learned a few things: you are a cutie, we eat food in the name of dates, and somehow make even boring days feel less boring just by being there.
+
+We didn't always know what we were doing. But we laughed through most of it, and that feels like a solid strategy.
+
+Also, for the record, if this were a system test, you'd still pass — mostly because you didn't crash when things got weird.
+
+Yours, Someone who still smiles at your nonsense
+— Debasmita`,
+            teasing: `Hey you,
+
+Let's clear something up.
+
+I didn't fall for you because everything was perfect. I fell because you stayed curious. Because you listened. Because you showed up — sometimes quietly, sometimes clumsily, but always honestly.
+
+One year later, I still like the way you exist around me. The way you don't rush. The way you notice things. The way you pretend you're not soft when you absolutely are.
+
+If I'm being efficient about this (and you know I am): choosing you still feels like the smartest decision in the system.
+
+Don't overthink this letter. Just know — I'm not done choosing you.
+
+— D`,
+            sentimental: `Dear Somruddha,
+
+A year ago, we didn't promise anything grand. We just said yes — and then kept showing up after that.
+
+What we built wasn't loud. It didn't always look impressive from the outside. But it was steady. And it was real.
+
+You became the place where my thoughts slow down. Where silence doesn't feel awkward. Where I don't have to explain myself twice.
+
+Loving you hasn't been about certainty. It's been about choice. About staying present. About growing without losing ourselves.
+
+Thank you — for this year, and for the quiet courage it took to live it with me.
+
+Always,
+Debasmita`
+        };
+
+        // Create floating particles
+        function createParticles(count = 25) {
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 25 + 20) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                document.body.appendChild(particle);
+            }
+        }
+
+        // Word-by-word typewriter effect
+        function typewriterEffect(element, text, wordDelay = 150) {
+            const words = text.split(' ');
+            element.innerHTML = '';
+            
+            words.forEach((word) => {
+                const span = document.createElement('span');
+                span.className = 'word';
+                span.textContent = word;
+                element.appendChild(span);
+            });
+
+            const wordElements = element.querySelectorAll('.word');
+            wordElements.forEach((wordEl, index) => {
+                setTimeout(() => {
+                    wordEl.style.animation = 'wordAppear 0.3s ease forwards';
+                }, index * wordDelay);
+            });
+
+            return words.length * wordDelay;
+        }
+
+        // Main timeline
+        function startExperience() {
+            const text1 = document.getElementById('text1');
+            const text2 = document.getElementById('text2');
+            const openingSeq = document.getElementById('opening-sequence');
+
+            const sentence1 = "Last time you were never expecting the acceptance letter.";
+            const sentence2 = "BUT FATE HAS ITS OWN WAY TO SHOW YOU THE REAL PATH.";
+
+            setTimeout(() => {
+                text1.style.opacity = '1';
+                const duration1 = typewriterEffect(text1, sentence1, 120);
+                setTimeout(() => {
+                    text1.style.transition = 'opacity 1s ease';
+                    text1.style.opacity = '0';
+                }, duration1 + 2000);
+
+                setTimeout(() => {
+                    text2.style.opacity = '1';
+                    const duration2 = typewriterEffect(text2, sentence2, 100);
+                    setTimeout(() => {
+                        text2.style.transition = 'opacity 1s ease';
+                        text2.style.opacity = '0';
+                        setTimeout(() => {
+                            openingSeq.style.transition = 'opacity 1s ease';
+                            openingSeq.style.opacity = '0';
+                            setTimeout(() => {
+                                openingSeq.style.display = 'none';
+                                document.getElementById('his-house-selection').classList.add('active');
+                            }, 1000);
+                        }, 1000);
+                    }, duration2 + 2000);
+                }, duration1 + 3000);
+            }, 500);
+        }
+
+        function selectHisHouse(house) {
+            const feedback = document.getElementById('hisFeedback');
+            if (house === 'gryffindor') {
+                feedback.className = 'house-feedback correct';
+                feedback.textContent = 'The lion roars within you. Welcome, brave heart.';
+                setTimeout(() => {
+                    document.getElementById('his-house-selection').classList.remove('active');
+                    document.getElementById('her-house-selection').classList.add('active');
+                }, 2000);
+            } else if (house === 'ravenclaw') {
+                feedback.className = 'house-feedback wrong';
+                feedback.textContent = 'RAVENCLAW?! We need courage here, not just cleverness! Try again.';
+            } else if (house === 'slytherin') {
+                feedback.className = 'house-feedback wrong';
+                feedback.textContent = 'SLYTHERIN?! This needs a lion, not a serpent. Choose again!';
+            } else {
+                feedback.className = 'house-feedback wrong';
+                feedback.textContent = 'This journey needs fire and bravery. Pick the house with the roar!';
+            }
+        }
+
+        function selectHerHouse(house) {
+            const feedback = document.getElementById('herFeedback');
+            if (house === 'hufflepuff') {
+                feedback.className = 'house-feedback correct';
+                feedback.textContent = 'Loyal. Patient. True. That is her. Perfect choice.';
+                setTimeout(() => {
+                    document.getElementById('her-house-selection').classList.remove('active');
+                    showLetter();
+                }, 2000);
+            } else if (house === 'gryffindor') {
+                feedback.className = 'house-feedback wrong';
+                feedback.textContent = 'Gryffindor? Think warmth and loyalty, not roar!';
+            } else if (house === 'ravenclaw') {
+                feedback.className = 'house-feedback wrong';
+                feedback.textContent = 'Ravenclaw?! Think warmth and steadfast loyalty, not wit!';
+            } else {
+                feedback.className = 'house-feedback wrong';
+                feedback.textContent = 'SLYTHERIN?! Pick the house with the badger!';
+            }
+        }
+
+        function showLetter() {
+            const letterContainer = document.getElementById('letter-container');
+            const letterWrapper = document.getElementById('letterWrapper');
+            const ctaButton = document.getElementById('cta-button');
+            const seal = document.getElementById('hogwartsSeal');
+
+            letterContainer.classList.add('active');
+            letterWrapper.classList.add('flying');
+
+            setTimeout(() => {
+                letterWrapper.classList.remove('flying');
+                letterWrapper.classList.add('unfolding');
+                setTimeout(() => {
+                    createParticles();
+                    setTimeout(() => {
+                        seal.classList.add('fade-out');
+                        setTimeout(() => {
+                            document.getElementById('warningText').classList.add('visible');
+                        }, 600);
+                        setTimeout(() => {
+                            ctaButton.classList.add('visible');
+                            ctaButton.style.opacity = '1';
+                            ctaButton.style.pointerEvents = 'all';
+                        }, 1200);
+                    }, 2000);
+                }, 800);
+            }, 2200);
+        }
+
+
+        // CTA button click - transition to Great Hall
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctaBtn = document.getElementById('cta-button');
+            if (ctaBtn) {
+                ctaBtn.addEventListener('click', () => {
+                    const letterContainer = document.getElementById('letter-container');
+                    const greatHall = document.getElementById('great-hall');
+
+                    // Fade out letter screen
+                    letterContainer.style.transition = 'opacity 0.8s ease';
+                    letterContainer.style.opacity = '0';
+
+                    setTimeout(() => {
+                        letterContainer.style.display = 'none';
+                        greatHall.classList.add('visible');
+                        createParticles();
+
+                        setTimeout(() => {
+                            document.getElementById('hallHeading').classList.add('visible');
+                            document.getElementById('hallSubtext').classList.add('visible');
+                            document.getElementById('memorySlideshow').classList.add('visible');
+                            startMemorySlideshow();
+
+                            const moments = document.querySelectorAll('.moment-item');
+                            moments.forEach((moment, index) => {
+                                setTimeout(() => {
+                                    moment.classList.add('visible');
+                                }, 1200 + (index * 300));
+                            });
+
+                            setupScrollTransition();
+                        }, 600);
+                    }, 800);
+                });
+            }
+        });
+
+        // Memory slideshow
+        function startMemorySlideshow() {
+            const slides = document.querySelectorAll('.memory-slide');
+            let currentSlide = 0;
+
+            setInterval(() => {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }, 1500); // Change every 1 second
+        }
+
+        // Scroll-based transition to games
+        function setupScrollTransition() {
+            const transitionMsg = document.getElementById('transitionMsg');
+            const gamesSection = document.getElementById('games-section');
+            const candles = document.querySelectorAll('.candle-light');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        transitionMsg.classList.add('visible');
+                        candles.forEach(c => c.classList.add('slow'));
+
+                        setTimeout(() => {
+                            gamesSection.classList.add('visible');
+                            document.getElementById('game1').classList.add('visible');
+                        }, 1500);
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            observer.observe(transitionMsg);
+        }
+
+        // Game 1: This or That
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                const q = questions[currentQuestionIndex];
+                document.getElementById('game1-question').textContent = q.q;
+                document.querySelector('#game1 .game-options').innerHTML = `
+                    <button class="game-button" onclick="nextQuestion()">${q.opts[0]}</button>
+                    <button class="game-button" onclick="nextQuestion()">${q.opts[1]}</button>
+                `;
+            } else {
+                transitionToGame2();
+            }
+        }
+
+        function transitionToGame2() {
+            const game1 = document.getElementById('game1');
+            game1.classList.add('exiting');
+            setTimeout(() => {
+                game1.style.display = 'none';
+                const game2 = document.getElementById('game2');
+                game2.style.display = 'block';
+                setTimeout(() => game2.classList.add('visible'), 50);
+            }, 800);
+        }
+
+        // Game 2: Infinite Loop
+        function answerMaybe() {
+            maybeCount++;
+            const msg = document.getElementById('loop-message');
+            if (maybeCount >= 3) {
+                msg.textContent = 'Sorry, Ukil Babu. My system is stuck in an infinite loop because your input didn\'t meet the Efficiency Requirements. Please assign the correct value to proceed.';
+            } else {
+                msg.textContent = 'Hmm... try again?';
+            }
+            msg.classList.add('visible');
+            setTimeout(() => {
+                msg.classList.remove('visible');
+            }, 2000);
+        }
+
+        function answerYes() {
+            const msg = document.getElementById('loop-message');
+            msg.textContent = 'Loop resolved. Optimal solution confirmed. ✓';
+            msg.classList.add('visible');
+            setTimeout(() => transitionToGame3(), 2500);
+        }
+
+        function transitionToGame3() {
+            const game2 = document.getElementById('game2');
+            game2.classList.add('exiting');
+            setTimeout(() => {
+                game2.style.display = 'none';
+                const game3 = document.getElementById('game3');
+                game3.style.display = 'block';
+                setTimeout(() => game3.classList.add('visible'), 50);
+            }, 800);
+        }
+
+        // Game 3: Amortentia
+        function revealScent() {
+            const result = document.getElementById('scent-result');
+            result.innerHTML = '"Correct."<br><br>"But to me, it always smells like home."<br><br>"Because home is wherever you are."';
+            result.classList.add('visible');
+            document.querySelector('#game3 .game-options').style.display = 'none';
+            setTimeout(() => transitionToGame4(), 4000);
+        }
+
+        function transitionToGame4() {
+            const game3 = document.getElementById('game3');
+            game3.classList.add('exiting');
+            setTimeout(() => {
+                game3.style.display = 'none';
+                const game4 = document.getElementById('game4');
+                game4.style.display = 'block';
+                setTimeout(() => game4.classList.add('visible'), 50);
+            }, 800);
+        }
+
+        // Game 4: Patronus
+        function castPatronus() {
+            const text = document.getElementById('patronus-text');
+            text.textContent = compliments[patronusIndex];
+            text.classList.add('visible');
+            patronusIndex = (patronusIndex + 1) % compliments.length;
+
+            if (patronusIndex === 0) {
+                setTimeout(() => transitionToGame5(), 3000);
+            }
+        }
+
+        function transitionToGame5() {
+            const game4 = document.getElementById('game4');
+            game4.classList.add('exiting');
+            setTimeout(() => {
+                game4.style.display = 'none';
+                const game5 = document.getElementById('game5');
+                game5.style.display = 'block';
+                setTimeout(() => game5.classList.add('visible'), 50);
+            }, 800);
+        }
+
+        // Game 5: Owl Post
+        function selectOwl(type, element) {
+            const letter = document.getElementById('owl-letter');
+            letter.textContent = owlLetters[type];
+            letter.classList.add('visible');
+
+            element.classList.add('flying');
+            
+            setTimeout(() => {
+                createHearts();
+                
+                // Show continue button after hearts finish
+                setTimeout(() => {
+                    document.getElementById('continueAfterOwl').style.display = 'inline-block';
+                }, 2500);
+            }, 1500);
+        }
+
+        function continueAfterOwlLetter() {
+            // Now transition to playful games
+            const playfulGamesSection = document.getElementById('playful-games');
+            playfulGamesSection.style.opacity = '1';
+            playfulGamesSection.style.pointerEvents = 'all';
+            
+            // Scroll to playful games
+            setTimeout(() => {
+                playfulGamesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+        }
+
+        function createHearts() {
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.textContent = '♥';
+                    heart.style.left = (Math.random() * 80 + 10) + '%';
+                    heart.style.top = '80%';
+                    heart.style.animationDelay = (Math.random() * 0.5) + 's';
+                    document.body.appendChild(heart);
+                    
+                    setTimeout(() => heart.remove(), 3000);
+                }, i * 150);
+            }
+        }
+
+        function transitionToFinalSection() {
+            const candles = document.querySelectorAll('.candle-light');
+            const finalSection = document.getElementById('final-section');
+
+            // Slow down candles
+            candles.forEach(c => c.style.animationDuration = '10s');
+
+            // Brief pause for silence
+            setTimeout(() => {
+                finalSection.classList.add('visible');
+                
+                // Reveal lines one by one
+                setTimeout(() => {
+                    document.getElementById('line1').classList.add('visible');
+                }, 1000);
+
+                setTimeout(() => {
+                    document.getElementById('line2').classList.add('visible');
+                }, 4000);
+
+                setTimeout(() => {
+                    document.getElementById('question').classList.add('visible');
+                }, 7500);
+
+                setTimeout(() => {
+                    document.getElementById('finalButtons').classList.add('visible');
+                }, 10500);
+            }, 2000);
+        }
+
+        function answerValentine() {
+            const buttons = document.getElementById('finalButtons');
+            const answer = document.getElementById('finalAnswer');
+            const finalSection = document.getElementById('final-section');
+            const keepsakeSection = document.getElementById('keepsakeSection');
+
+            buttons.style.opacity = '0';
+            buttons.style.pointerEvents = 'none';
+
+            // Warm the background
+            setTimeout(() => {
+                finalSection.classList.add('warmed');
+            }, 500);
+
+            // Show answer
+            setTimeout(() => {
+                answer.classList.add('visible');
+            }, 1500);
+
+            // Pause, then reveal keepsake section
+            setTimeout(() => {
+                keepsakeSection.classList.add('visible');
+                
+                // Show second message
+                setTimeout(() => {
+                    document.getElementById('keepsakeMsg2').style.opacity = '1';
+                    document.getElementById('keepsakeMsg2').style.transition = 'opacity 2s ease';
+                }, 2500);
+
+                // Show action buttons
+                setTimeout(() => {
+                    document.getElementById('keepsakeActions').style.opacity = '1';
+                    document.getElementById('keepsakeActions').style.transition = 'opacity 1.5s ease';
+                }, 5000);
+            }, 4000);
+        }
+
+        // Letter viewing functions
+        function viewLetterDocument() {
+            const modal = document.getElementById('letterModal');
+            modal.classList.add('visible');
+            
+            setTimeout(() => {
+                const ending = document.getElementById('trueEnding');
+                const downloadMsg = document.getElementById('downloadMsg');
+                ending.classList.add('visible');
+                downloadMsg.style.opacity = '1';
+                downloadMsg.style.transition = 'opacity 1.5s ease';
+            }, 2000);
+        }
+
+        function closeLetter() {
+            const modal = document.getElementById('letterModal');
+            modal.classList.remove('visible');
+        }
+
+        function downloadLetter() {
+            // Fetch the image and trigger download
+            fetch('images/hogwarts-parchment.png')
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'Hogwarts_Acceptance_Letter.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                    // Fallback method
+                    const link = document.createElement('a');
+                    link.href = 'images/hogwarts-parchment.png';
+                    link.download = 'Hogwarts_Acceptance_Letter.png';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+            
+            setTimeout(() => {
+                const ending = document.getElementById('trueEnding');
+                const downloadMsg = document.getElementById('downloadMsg');
+                ending.classList.add('visible');
+                downloadMsg.style.opacity = '1';
+                downloadMsg.style.transition = 'opacity 1.5s ease';
+            }, 1500);
+        }
+
+        // Start experience
+        document.addEventListener('DOMContentLoaded', () => {
+            startExperience();
+            
+            // Attach moment item click listeners
+            document.querySelectorAll('.moment-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    console.log('Moment clicked!');
+                    const wasActive = this.classList.contains('active');
+                    document.querySelectorAll('.moment-item').forEach(m => m.classList.remove('active'));
+                    if (!wasActive) {
+                        this.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        // ========== PLAYFUL GAMES FUNCTIONS ==========
+
+        // Game 1: Annotate Your Answer
+        function tryChooseNo(event) {
+            event.preventDefault();
+            // Do nothing - button is magically sealed
+        }
+
+        function chooseYes(button) {
+            button.classList.add('success-glow');
+            setTimeout(() => {
+                transitionToPlayfulGame('illusionGame');
+            }, 1000);
+        }
+
+        // Game 2: Illusion of Choice
+        function chooseSomeoneElse(button) {
+            button.classList.add('dissolving');
+            setTimeout(() => {
+                button.style.display = 'none';
+                document.getElementById('multiverseError').classList.add('visible');
+            }, 1000);
+            
+            // Keep error visible for 4 seconds before proceeding
+            setTimeout(() => {
+                chooseDebasmita();
+            }, 5000); // 1s dissolve + 4s read time
+        }
+
+        function chooseDebasmita() {
+            setTimeout(() => {
+                transitionToPlayfulGame('wouldYouRather');
+            }, 800);
+        }
+
+        // Game 3: Would You Rather
+        function tryDetention(event) {
+            event.preventDefault();
+            // Button is disabled
+        }
+
+        function chooseValentine() {
+            setTimeout(() => {
+                transitionToPlayfulGame('sortingHat');
+            }, 800);
+        }
+
+        // Game 4: Sorting Hat
+        function tryThinkAboutIt(button) {
+            button.style.opacity = '0.3';
+            button.style.pointerEvents = 'none';
+            const hat = document.querySelector('.sorting-hat-image');
+            const scold = document.getElementById('hatScold');
+            
+            // Shake the hat
+            hat.style.animation = 'none';
+            setTimeout(() => {
+                hat.style.animation = 'hatShake 0.5s ease';
+            }, 10);
+            
+            // Show humorous scolding
+            setTimeout(() => {
+                scold.classList.add('visible');
+            }, 600);
+        }
+
+        function sortObviouslyYes() {
+            document.getElementById('hatScold').classList.remove('visible');
+            document.getElementById('sortingResult').classList.add('visible');
+            setTimeout(() => {
+                transitionToPlayfulGame('yesMeter');
+            }, 3000);
+        }
+
+        // Game 5: Yes Meter
+        const commitmentSlider = document.getElementById('commitmentSlider');
+        if (commitmentSlider) {
+            commitmentSlider.addEventListener('input', function() {
+                const thumb = document.getElementById('sliderThumb');
+                thumb.style.left = this.value + '%';
+            });
+
+            commitmentSlider.addEventListener('change', function() {
+                const result = document.getElementById('meterResult');
+                const thumb = document.getElementById('sliderThumb');
+                
+                if (this.value < 100) {
+                    result.textContent = 'Nice try, but we both know the answer...';
+                    result.classList.add('visible');
+                    
+                    setTimeout(() => {
+                        this.value = 100;
+                        thumb.style.left = '100%';
+                        result.textContent = '"Always" was always the answer.';
+                    }, 1500);
+                } else {
+                    result.textContent = 'Perfect. That\'s exactly right.';
+                    result.classList.add('visible');
+                }
+
+                // Show scroll indicator after commitment is confirmed
+                setTimeout(() => {
+                    document.getElementById('scrollIndicator').style.display = 'block';
+                }, 2000);
+            });
+        }
+
+        // Scroll to silence section function (replaces old final section scroll)
+        function scrollToFinalSection() {
+            const silenceSection = document.getElementById('silence-section');
+            silenceSection.classList.add('visible');
+            silenceSection.classList.add('locked');
+            
+            setTimeout(() => {
+                silenceSection.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                
+                // Create ambient hearts and candles
+                createSilenceAmbience();
+                
+                // Show text after 2 seconds
+                setTimeout(() => {
+                    document.getElementById('silenceText').classList.add('visible');
+                    
+                    // Show continue button after another 2 seconds
+                    setTimeout(() => {
+                        document.getElementById('silenceContinue').classList.add('visible');
+                        silenceSection.classList.remove('locked');
+                    }, 2000);
+                }, 2000);
+            }, 500);
+        }
+
+        // Create ambient hearts and candles for silence section
+        function createSilenceAmbience() {
+            const container = document.querySelector('.silence-hearts');
+            
+            // Add hearts
+            for (let i = 0; i < 8; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'silence-heart';
+                heart.textContent = '♥';
+                heart.style.left = (Math.random() * 80 + 10) + '%';
+                heart.style.top = (Math.random() * 80 + 10) + '%';
+                heart.style.animationDelay = (Math.random() * 4) + 's';
+                container.appendChild(heart);
+            }
+            
+            // Add candles
+            for (let i = 0; i < 5; i++) {
+                const candle = document.createElement('div');
+                candle.className = 'silence-candle';
+                candle.style.left = (Math.random() * 90 + 5) + '%';
+                candle.style.top = (Math.random() * 20 + 10) + '%';
+                candle.style.animationDelay = (Math.random() * 3) + 's';
+                container.appendChild(candle);
+            }
+        }
+
+        // Continue to Forever Valentine section
+        function continueToForever() {
+            const foreverSection = document.getElementById('forever-valentine');
+            foreverSection.classList.add('visible');
+            
+            setTimeout(() => {
+                foreverSection.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+                
+                // Reveal content step by step
+                setTimeout(() => {
+                    document.getElementById('foreverIntro').classList.add('visible');
+                }, 500);
+                
+                setTimeout(() => {
+                    document.getElementById('foreverQuestion').classList.add('visible');
+                }, 2000);
+                
+                setTimeout(() => {
+                    document.getElementById('foreverOptions').classList.add('visible');
+                }, 3500);
+            }, 500);
+        }
+
+        // Answer Yes
+        function answerForeverYes() {
+            const response = document.getElementById('foreverResponse');
+            const options = document.getElementById('foreverOptions');
+            
+            response.textContent = '"You say it simply. I like that."';
+            response.classList.add('visible');
+            options.style.opacity = '0';
+            options.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                showForeverTransition();
+            }, 2000);
+        }
+
+        // Answer Always
+        function answerForeverAlways() {
+            const response = document.getElementById('foreverResponse');
+            const options = document.getElementById('foreverOptions');
+            
+            response.textContent = '"I knew you\'d choose this one."';
+            response.classList.add('visible');
+            options.style.opacity = '0';
+            options.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                showForeverTransition();
+            }, 2000);
+        }
+
+        // Show transition text and document actions
+        function showForeverTransition() {
+            const transition = document.getElementById('foreverTransition');
+            const actions = document.getElementById('foreverActions');
+            
+            transition.classList.add('visible');
+            
+            setTimeout(() => {
+                actions.classList.add('visible');
+            }, 3000);
+        }
+
+        // View Forever Document
+        function viewForeverDocument() {
+            const modal = document.getElementById('letterModal');
+            modal.classList.add('visible');
+            
+            // Trigger ending after viewing
+            setTimeout(() => {
+                triggerFinalEnding();
+            }, 3000);
+        }
+
+        // Download Forever Document
+        function downloadForeverDocument() {
+            fetch('images/hogwarts-parchment.png')
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'hogwarts-parchment.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                    const link = document.createElement('a');
+                    link.href = 'images/hogwarts-parchment.png';
+                    link.download = 'hogwarts-parchment.png';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+            
+            // Trigger ending after download
+            setTimeout(() => {
+                triggerFinalEnding();
+            }, 2000);
+        }
+
+        // Trigger Final Ending
+        function triggerFinalEnding() {
+            const endingSection = document.getElementById('final-ending');
+            
+            // Close modal if open
+            const modal = document.getElementById('letterModal');
+            modal.classList.remove('visible');
+            
+            // Show ending section
+            endingSection.classList.add('visible');
+            
+            // Scroll to ending
+            setTimeout(() => {
+                endingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Create floating hearts
+                createEndingHearts();
+                
+                // Reveal lines sequentially
+                setTimeout(() => {
+                    document.getElementById('endLine1').classList.add('visible');
+                }, 1000);
+                
+                setTimeout(() => {
+                    document.getElementById('endLine2').classList.add('visible');
+                }, 2500);
+                
+                setTimeout(() => {
+                    document.getElementById('endLine3').classList.add('visible');
+                }, 4000);
+                
+                setTimeout(() => {
+                    document.getElementById('endLine4').classList.add('visible');
+                }, 5500);
+                
+                setTimeout(() => {
+                    document.getElementById('endSignature').classList.add('visible');
+                }, 7500);
+                
+                setTimeout(() => {
+                    document.getElementById('endFinal').classList.add('visible');
+                }, 10000);
+            }, 500);
+        }
+
+        // Create floating hearts for ending
+        function createEndingHearts() {
+            const container = document.getElementById('endingHearts');
+            
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'ending-heart';
+                    heart.textContent = '♥';
+                    heart.style.left = (Math.random() * 100) + '%';
+                    heart.style.bottom = '0';
+                    heart.style.animationDelay = (Math.random() * 2) + 's';
+                    container.appendChild(heart);
+                    
+                    setTimeout(() => heart.remove(), 8000);
+                }, i * 400);
+            }
+        }
+
+        // Hat shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes hatShake {
+                0%, 100% { transform: translateY(0) rotate(-2deg); }
+                25% { transform: translateY(-5px) rotate(-5deg); }
+                75% { transform: translateY(-5px) rotate(5deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Helper function to transition between playful games
+        function transitionToPlayfulGame(nextGameId) {
+            const currentGame = document.querySelector('.playful-game:not([style*="display: none"])');
+            const nextGame = document.getElementById(nextGameId);
+            
+            if (currentGame && currentGame.id !== nextGameId) {
+                currentGame.classList.add('exiting');
+                setTimeout(() => {
+                    currentGame.style.display = 'none';
+                    nextGame.style.display = 'block';
+                    setTimeout(() => nextGame.classList.add('visible'), 50);
+                }, 800);
+            } else if (nextGame) {
+                nextGame.style.display = 'block';
+                setTimeout(() => nextGame.classList.add('visible'), 50);
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+           
